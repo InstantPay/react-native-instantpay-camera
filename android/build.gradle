@@ -40,10 +40,15 @@ android {
   defaultConfig {
     minSdkVersion getExtOrDefault("minSdkVersion")
     targetSdkVersion getExtOrDefault("targetSdkVersion")
+
+      //For Debug Log
+      def ipayCameraLogEnable = project.hasProperty("IpayCamera_Log") ? project.properties["IpayCamera_Log"] : null
+      buildConfigField "boolean", "IpayCamera_Log", ipayCameraLogEnable == null ? "false" : "${ipayCameraLogEnable}"
   }
 
   buildFeatures {
     buildConfig true
+      viewBinding = true //add viewBinding
   }
 
   buildTypes {
@@ -64,4 +69,13 @@ android {
 
 dependencies {
   implementation "com.facebook.react:react-android"
+    def camerax_version = "1.6.0-rc01"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation "com.google.guava:guava:31.0.1-android"
+
+    // To recognize Latin script
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
 }

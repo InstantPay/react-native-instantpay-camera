@@ -2,6 +2,12 @@
 
 A React Native camera library enables developers to access and control a device’s camera (front/back) directly from a React Native application. It allows building features like photo capture, video recording, QR/barcode scanning, document scanning, face detection, and real-time image processing.
 
+## Features
+
+✅ Capture Photo
+
+
+
 ## Installation
 
 
@@ -9,6 +15,15 @@ A React Native camera library enables developers to access and control a device�
 npm install react-native-instantpay-camera
 ```
 
+## API
+
+Available Options List:
+
+```typescript
+- Capture Photo Props
+    -
+
+```
 
 ## Usage
 
@@ -18,7 +33,7 @@ import { InstantpayCameraView } from "react-native-instantpay-camera";
 
 // ...
 
-<InstantpayCameraView color="tomato" />
+<InstantpayCameraView  />
 ```
 
 
