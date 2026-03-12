@@ -27,6 +27,10 @@ export default function App() {
 		console.log('onCameraStartedCallbackHandeler',event.nativeEvent)
 	}
 
+	const onPhotoCapturedCallbackHandeler = (event:any) => {
+		console.log('onPhotoCapturedCallbackHandeler',event.nativeEvent)
+	}
+
 	return (
 		<View style={styles.container}>
 			<Modal
@@ -45,14 +49,16 @@ export default function App() {
 								style={styles.box} 
 								color="#32a852"
 								photoCaptureConfig={{
+									cameraFacing: "BACK",
 									quality: "HIGH",
-									flash: "AUTO",
-									saveToGallery: true
+									flash: "ON",
+									//saveToGallery: true
 								}}
 								onCloseCallback={(event) => onCloseCallbackHandeler(event)}
 								onErrorCallback={(event) => onErrorCallbackHandeler(event)}
 								onSuccessCallback={(event) => onSuccessCallbackHandeler(event)}
 								onCameraStartedCallback={(event) => onCameraStartedCallbackHandeler(event)}
+								onPhotoCapturedCallback={(event) => onPhotoCapturedCallbackHandeler(event)}
 							/>
 						</View>
 						<Pressable style={[styles.button, styles.buttonClose]}
