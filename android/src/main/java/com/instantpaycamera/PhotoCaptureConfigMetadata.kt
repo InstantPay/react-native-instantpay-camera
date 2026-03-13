@@ -17,8 +17,12 @@ enum class CameraFlash {
     OFF,
 }
 
+enum class TorchMode {
+    ON,
+    OFF
+}
+
 data class PhotoCaptureConfigMetadata(
-    val cameraFacing: CameraFacing,
     val quality: CaptureQuality,
     val flash: CameraFlash,
     val saveToGallery: Boolean,

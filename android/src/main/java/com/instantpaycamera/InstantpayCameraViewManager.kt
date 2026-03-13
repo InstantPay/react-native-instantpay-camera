@@ -64,21 +64,6 @@ class InstantpayCameraViewManager : SimpleViewManager<InstantpayCameraView>(),
             sendError("Invalid captureConfig.quality value")
         }*/
 
-        //Camera Facing
-        var validCameraFacing = CameraFacing.BACK
-        if (config.hasKey("cameraFacing")) {
-
-            val cameraType = config.getString("cameraFacing")
-
-            val validCameraType = when (cameraType) {
-                "FRONT" -> CameraFacing.FRONT
-                "BACK" -> CameraFacing.BACK
-                else -> CameraFacing.BACK
-            }
-
-            validCameraFacing = validCameraType
-        }
-
         // QUALITY
         var validCaptureQuality = CaptureQuality.MEDIUM
         if (config.hasKey("quality")) {
@@ -171,7 +156,6 @@ class InstantpayCameraViewManager : SimpleViewManager<InstantpayCameraView>(),
 
         view?.setPhotoCaptureConfig(
             PhotoCaptureConfigMetadata(
-                cameraFacing = validCameraFacing,
                 quality = validCaptureQuality,
                 flash = validCameraFlash,
                 saveToGallery = normalized.getBoolean("saveToGallery"),
@@ -182,5 +166,44 @@ class InstantpayCameraViewManager : SimpleViewManager<InstantpayCameraView>(),
                 captureSound = normalized.getBoolean("captureSound"),
             )
         )
+    }
+
+    @ReactProp(name = "cameraFacing")
+    override fun setCameraFacing(view: InstantpayCameraView?, type: String?){
+
+        //Camera Facing
+        var validCameraFacing = CameraFacing.BACK
+        if (type!=null && type.isNotEmpty()) {
+
+            val cameraType = type
+
+            val validCameraType = when (cameraType) {
+                "FRONT" -> CameraFacing.FRONT
+                "BACK" -> CameraFacing.BACK
+                else -> CameraFacing.BACK
+            }
+
+            validCameraFacing = validCameraType
+        }
+
+        view?.setCameraFacing(validCameraFacing)
+    }
+
+    @ReactProp(name = "torchMode")
+    override fun setTorchMode(view: InstantpayCameraView?, mode: String?){
+        if (mode!=null && mode.isNotEmpty()) {
+
+            val modeType = mode
+
+            val validModeType = when (modeType) {
+                "ON" -> TorchMode.ON
+                "OFF" -> TorchMode.OFF
+                else -> TorchMode.OFF
+            }
+
+            val validTorchMode = validModeType
+
+            view?.setTorchMode(validTorchMode)
+        }
     }
 }

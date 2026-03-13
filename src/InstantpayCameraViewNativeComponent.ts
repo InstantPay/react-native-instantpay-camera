@@ -71,7 +71,6 @@ interface PhotoCapturedEventData {
 /**
  * Photo Capture Configuration Interface
  * @interface PhotoCaptureConfig
- * @property {('FRONT' | 'BACK')} cameraFacing - The camera to use for capturing the photo (front or back).
  * @property {('LOW' | 'MEDIUM' | 'HIGH')} quality - The quality of the captured photo.
  * @property {('AUTO' | 'ON' | 'OFF')} flash - The flash mode for capturing the photo.
  * @property {boolean} saveToGallery - Whether to save the captured photo to the gallery.
@@ -80,17 +79,38 @@ interface PhotoCapturedEventData {
  * @property {boolean} captureSound - Capture Sound enable/disable while taking photo. default:true
  */
 interface PhotoCaptureConfig {
-	cameraFacing?: WithDefault<"FRONT" | "BACK", "BACK">;
     quality?: WithDefault<"LOW" | "MEDIUM" | "HIGH", "MEDIUM">;
     flash?: WithDefault<"AUTO" | "ON" | "OFF", "AUTO">;
     saveToGallery?: boolean;
+	maxWidth?: Double;
+	maxHeight?: Double;
 	base64ImageOutput?: boolean;
 	compressBase64ImageOutput?: boolean;
 	captureSound?: boolean;
 }
 
+/**
+ * Camera Lens Facing Type
+ * @typedef {('FRONT' | 'BACK')} CameraFacing
+ * @description Represents the camera lens facing direction.
+ * - 'FRONT': Indicates the front-facing camera (selfie camera).
+ * - 'BACK': Indicates the rear-facing camera (main camera).
+ */
+type CameraFacing = WithDefault<"FRONT" | "BACK", "BACK">;
+
+/**
+ * Torch Mode Type
+ * @typedef {('ON' | 'OFF')} TorchMode
+ * @description Represents the torch (flashlight) mode for the camera.
+ * - 'ON': Indicates that the torch is turned on.
+ * - 'OFF': Indicates that the torch is turned off.
+ */
+type TorchMode = WithDefault<"ON" | "OFF", "OFF">;
+
 interface NativeProps extends ViewProps {
   	color?: ColorValue;
+	cameraFacing?: CameraFacing;
+	torchMode?: TorchMode;
 	photoCaptureConfig?: PhotoCaptureConfig;
 	onCloseCallback?: BubblingEventHandler<Readonly<CloseEventData>>;
 	onErrorCallback?: BubblingEventHandler<Readonly<ErrorEventData>>;

@@ -1,6 +1,7 @@
 package com.instantpaycamera
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactContext
@@ -50,6 +51,35 @@ object CommanHelper {
                 Log.d(fullTagName, value)
             }
         }
+    }
+
+    fun resizeBitmap(
+        bitmap: Bitmap,
+        maxWidth: Int,
+        maxHeight: Int
+    ): Bitmap {
+
+        val width = bitmap.width
+        val height = bitmap.height
+
+        if (width <= maxWidth && height <= maxHeight) {
+            return bitmap
+        }
+
+        val ratio = minOf(
+            maxWidth.toFloat() / width,
+            maxHeight.toFloat() / height
+        )
+
+        val newWidth = (width * ratio).toInt()
+        val newHeight = (height * ratio).toInt()
+
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            newWidth,
+            newHeight,
+            true
+        )
     }
 }
 

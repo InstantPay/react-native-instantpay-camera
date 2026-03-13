@@ -15,6 +15,7 @@ import android.provider.MediaStore
 import android.util.AttributeSet
 import android.util.Base64
 import android.util.Log
+import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -41,7 +42,10 @@ import android.view.TextureView
 import android.view.ViewGroup
 import android.view.Surface
 import android.widget.Button
+import android.widget.LinearLayout
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
@@ -62,14 +66,23 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     )*/
 
     private val textureView = TextureView(context)
+    private val topOverlayBar = LinearLayout(context)
+    private val topOverlaySpaceBetween = View(context)
+    private val rightSideContainerOfTopOverlay = LinearLayout(context)
+    private val bottomOverlayBar = LinearLayout(context)
     private val closeButton = AppCompatImageButton(context) //For Close button
     private val cameraFlashButton = AppCompatImageButton(context) //Camera Flash Button
     private val cameraCaptureButton = AppCompatImageButton(context) //Camera Capture Button
     private val switchCameraButton = AppCompatImageButton(context) //Camera Switch Button
+    private val torchButton = AppCompatImageButton(context) //Torch Button
     private var cameraProvider: ProcessCameraProvider? = null
     private var camera: Camera? = null
-    private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    private var cameraSelector = CameraSelector.LENS_FACING_BACK
+
+    private var flashMode : CameraFlash  = CameraFlash.AUTO
+
     private val flashOverlay = View(context) //Flash Effect on Capture Button
+    private var torchMode : TorchMode = TorchMode.OFF //Default Torch Button Value
 
     private val SUCCESS_TAG = "SUCCESS"
     private val ERROR_TAG = "ERROR"
@@ -99,15 +112,16 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
     init {
 
-        textureView.layoutParams = LayoutParams(
-            LayoutParams.MATCH_PARENT,
-            LayoutParams.MATCH_PARENT
-        )
+        //Add Main Layout View
+        mainLayoutView()
 
-        //Add Main TextureView to show camera view
-        addView(textureView)
+        //Add Top Overlay Bar
+        topOverlayLayoutView()
 
-        // Overlay that will flash
+        //Add Bottom Overlay Bar
+        bottomOverlayLayoutView()
+
+        // Overlay that will flash when capture the photo
         flashOverlay.setBackgroundColor(Color.WHITE)
         flashOverlay.alpha = 0f
         flashOverlay.layoutParams = LayoutParams(
@@ -117,13 +131,6 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
         addView(flashOverlay)
         flashOverlay.bringToFront()
-
-        //Added Close Button Layout View
-        closeButtonLayoutView()
-
-        cameraCaptureButtonLayoutView()
-
-        cameraSwitchButtonLayoutView()
 
         textureView.surfaceTextureListener =
             object : TextureView.SurfaceTextureListener {
@@ -151,6 +158,92 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     }
 
     /**
+     * Main Layout Setup
+     */
+    private fun mainLayoutView(){
+
+        textureView.layoutParams = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.MATCH_PARENT
+        )
+
+        //Add Main TextureView to show camera view
+        addView(textureView)
+    }
+
+    /**
+     * Top Overlay Bar Layout Setup
+     */
+    private fun topOverlayLayoutView(){
+
+        topOverlayBar.setBackgroundColor(Color.parseColor("#90000000"))
+        topOverlayBar.orientation = LinearLayout.HORIZONTAL
+        topOverlayBar.gravity = Gravity.CENTER_VERTICAL
+
+        val topParams = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            100
+        )
+
+        topParams.gravity = Gravity.TOP
+
+        addView(topOverlayBar,topParams)
+
+        //Added Close Button Layout View on Left Side
+        closeButtonLayoutView()
+
+        //Added Spacer Between Left and Right Side Container
+        spaceBetweenOnTopOverlayLayout()
+
+        //Add Right Side Container
+        rightSideContainerTopOverlayLayout()
+    }
+
+    /**
+     * Space Between Layout on Top Overlay Layout
+     */
+    private fun spaceBetweenOnTopOverlayLayout(){
+        val spaceParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.MATCH_PARENT
+        )
+
+        spaceParams.weight = 1f
+
+        topOverlayBar.addView(topOverlaySpaceBetween, spaceParams)
+    }
+
+    /**
+     * Right side container item for Top Overlay Layout
+     */
+    private fun rightSideContainerTopOverlayLayout(){
+
+        rightSideContainerOfTopOverlay.orientation = LinearLayout.HORIZONTAL
+
+        rightSideContainerOfTopOverlay.setPadding(10,0,20,0)
+
+        topOverlayBar.addView(rightSideContainerOfTopOverlay)
+    }
+
+    /**
+     * Bottom Overlay Bar Layout Setup
+     */
+    private fun bottomOverlayLayoutView(){
+
+        bottomOverlayBar.setBackgroundColor(Color.parseColor("#90000000"))
+        bottomOverlayBar.gravity = Gravity.CENTER
+        bottomOverlayBar.orientation = LinearLayout.HORIZONTAL
+
+        val bottomParams = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            250
+        )
+
+        bottomParams.gravity = Gravity.BOTTOM
+        addView(bottomOverlayBar, bottomParams)
+    }
+
+    /**
      * Button Layout View Setup
      */
     private fun closeButtonLayoutView(){
@@ -170,12 +263,12 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
             LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            setMargins(32, 10, 32, 32)
+            setMargins(20, 0, 0, 0)
         }
 
         closeButton.setBackgroundColor(Color.TRANSPARENT)
 
-        addView(closeButton)
+        topOverlayBar.addView(closeButton)
 
         closeButton.setOnClickListener {
             //On CloseButton Fire Action
@@ -205,22 +298,71 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
             cameraFlashButton.setImageResource(R.drawable.flash_auto)
         }
 
-        cameraFlashButton.layoutParams = LayoutParams(
+        /*cameraFlashButton.layoutParams = LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.TOP or Gravity.END
-            setMargins(32, 10, 32, 32)
-        }
+            setMargins(0, 0, 0, 0)
+        }*/
 
         cameraFlashButton.setBackgroundColor(Color.TRANSPARENT)
 
-        addView(cameraFlashButton)
+        rightSideContainerOfTopOverlay.addView(cameraFlashButton)
 
         cameraFlashButton.setOnClickListener {
-            //toggleFlash()
+
+            // Press animation
+            cameraFlashButton.animate()
+                .scaleX(0.85f)
+                .scaleY(0.85f)
+                .setDuration(80)
+                .withEndAction {
+
+                    toggleFlash()
+
+                    // Restore button
+                    cameraFlashButton.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(120)
+                        .start()
+                }
+                .start()
+        }
+    }
+
+    /**
+     * Toggle Camera Flash AUTO -> ON -> OFF -> AUTO
+     */
+    private fun toggleFlash(){
+
+        flashMode = when(flashMode){
+            CameraFlash.AUTO -> CameraFlash.ON
+            CameraFlash.ON -> CameraFlash.OFF
+            CameraFlash.OFF -> CameraFlash.AUTO
         }
 
+        when (flashMode) {
+            CameraFlash.ON -> imageCapture?.flashMode = ImageCapture.FLASH_MODE_ON
+            CameraFlash.OFF -> imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
+            CameraFlash.AUTO -> imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
+        }
+
+        updateFlashIcon()
+    }
+
+    /**
+     * Update Flash Icon while Change the Flash Mode
+     */
+    private fun updateFlashIcon() {
+        val icon = when (flashMode) {
+            CameraFlash.ON -> R.drawable.flash_on
+            CameraFlash.OFF -> R.drawable.flash_off
+            CameraFlash.AUTO -> R.drawable.flash_auto
+        }
+
+        cameraFlashButton.setImageResource(icon)
     }
 
     /**
@@ -250,14 +392,14 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
      * Change Camera Facing Front Camera / Back Camera
      */
     private fun switchCamera(){
-        if(cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA){
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        }
-        else{
-            cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-        }
 
-        //startCamera()
+        cameraSelector =
+            if(cameraSelector == CameraSelector.LENS_FACING_BACK)
+                CameraSelector.LENS_FACING_FRONT
+            else
+                CameraSelector.LENS_FACING_BACK
+
+        restartCamera()
     }
 
     /**
@@ -395,36 +537,84 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
                 cameraProvider?.unbindAll()
 
+                val useCases = mutableListOf<UseCase>()
+                useCases.add(preview)
+
+                val currentCameraLens = CameraSelector.Builder()
+                    .requireLensFacing(cameraSelector)
+                    .build()
+
                 //Configuration Set to Capture Photo
                 if(photoCaptureConfig!=null){
 
                     CommanHelper.logPrint(CLASS_TAG_NAME,"photoCaptureConfig is set to do capture photo")
 
-                    imageCapture = ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                        .setJpegQuality(95)
-                        .build()
-
-                    if(photoCaptureConfig?.cameraFacing == CameraFacing.FRONT){
-                        cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+                    val jpegQuality = when(photoCaptureConfig?.quality) {
+                        CaptureQuality.LOW -> 60
+                        CaptureQuality.MEDIUM -> 80
+                        CaptureQuality.HIGH -> 95
+                        else -> 80
                     }
 
-                    camera = cameraProvider?.bindToLifecycle(
-                        activity,
-                        cameraSelector,
-                        preview,
-                        imageCapture
-                    )
+                    val captureMode =
+                        if (photoCaptureConfig?.quality == CaptureQuality.LOW)
+                            ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+                        else
+                            ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
+
+                    var resolutionSelector: ResolutionSelector? = null
+                    if(photoCaptureConfig?.maxWidth !=null
+                        && photoCaptureConfig?.maxWidth!! > 0
+                        && photoCaptureConfig?.maxHeight !=null
+                        && photoCaptureConfig?.maxHeight!! > 0
+                    ){
+                        resolutionSelector = ResolutionSelector.Builder()
+                            .setResolutionStrategy(
+                                ResolutionStrategy(
+                                    Size(photoCaptureConfig?.maxWidth!!, photoCaptureConfig?.maxHeight!!),
+                                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER //ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                                )
+                            )
+                            .build()
+                    }
+
+                    val imageCaptureBuilder = ImageCapture.Builder()
+                        .setCaptureMode(captureMode)
+                        .setJpegQuality(jpegQuality)
+
+                    //Set Capture Image Resolution
+                    if(resolutionSelector!=null){
+                        imageCaptureBuilder.setResolutionSelector(resolutionSelector)
+                    }
+
+                    //Set Flash operation
+                    when(flashMode){
+                        CameraFlash.AUTO -> imageCaptureBuilder.setFlashMode(ImageCapture.FLASH_MODE_AUTO)
+                        CameraFlash.ON -> imageCaptureBuilder.setFlashMode(ImageCapture.FLASH_MODE_ON)
+                        CameraFlash.OFF -> imageCaptureBuilder.setFlashMode(ImageCapture.FLASH_MODE_OFF)
+                    }
+
+                    //Flash Off while Using Front Camera
+                    if(cameraSelector == CameraSelector.LENS_FACING_FRONT){
+                        imageCaptureBuilder.setFlashMode(ImageCapture.FLASH_MODE_OFF)
+                    }
+
+                    imageCapture = imageCaptureBuilder.build()
+
+                    useCases.add(imageCapture!!)
+                }
+
+                camera = cameraProvider?.bindToLifecycle(
+                    activity,
+                    currentCameraLens,
+                    *useCases.toTypedArray()
+                )
+
+                if(torchMode == TorchMode.ON){
+                    camera?.cameraControl?.enableTorch(true)
                 }
                 else{
-
-                    CommanHelper.logPrint(CLASS_TAG_NAME,"No Configuration is Found")
-
-                    camera = cameraProvider?.bindToLifecycle(
-                        activity,
-                        cameraSelector,
-                        preview
-                    )
+                    camera?.cameraControl?.enableTorch(false)
                 }
 
                 val output = Arguments.createMap().apply {
@@ -470,6 +660,14 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     }
 
     /**
+     * Restart Camera
+     */
+    private fun restartCamera(){
+        cameraProvider?.unbindAll()
+        startCamera()
+    }
+
+    /**
      * Clear View from parent
      */
     private fun removeFromParent() {
@@ -486,14 +684,33 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     }
 
     /**
+     * Set Camera Facing : FRONT or BACK
+     */
+    fun setCameraFacing(cameraFacing : CameraFacing){
+        cameraSelector =
+            if(cameraFacing == CameraFacing.FRONT)
+                CameraSelector.LENS_FACING_FRONT
+            else
+                CameraSelector.LENS_FACING_BACK
+    }
+
+    /**
      * Set Configuration of Capture Photo from Camera
      */
     fun setPhotoCaptureConfig(config: PhotoCaptureConfigMetadata?){
         photoCaptureConfig = config
         CommanHelper.logPrint(CLASS_TAG_NAME,"photoCaptureConfig : ${photoCaptureConfig}")
 
-        //Added Camera Flash Button Layout View
+        flashMode = photoCaptureConfig?.flash!!
+
+        //Add Camera Flash Button Layout View
         cameraFlashButtonLayoutView()
+
+        //Add Capture Button Layout
+        cameraCaptureButtonLayoutView()
+
+        //Add Camera Switch Button Layout
+        cameraSwitchButtonLayoutView()
     }
 
     /**
@@ -562,20 +779,48 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
                         val bytes = inputStream?.readBytes()
                         val base64Image = Base64.encodeToString(bytes, Base64.NO_WRAP)
 
-                        //Compress image on Base64
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        val resized = Bitmap.createScaledBitmap(bitmap, 1080, 1080, true)
-                        val stream = ByteArrayOutputStream()
-                        resized.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-                        val base64ImageCompress = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                        CommanHelper.logPrint(CLASS_TAG_NAME, "Saved URI: ${savedUri}")
+
+                        var base64ImageCompress = ""
+                        if(inputStream!=null){
+                            //val bitmap = BitmapFactory.decodeStream(inputStream)
+                            val bitmap = context.contentResolver
+                                .openInputStream(savedUri)
+                                ?.use { stream ->
+                                    BitmapFactory.decodeStream(stream)
+                                }
+
+                            CommanHelper.logPrint(CLASS_TAG_NAME, "width : ${bitmap?.width} , height : ${bitmap?.height}")
+
+                            val maxWidth = photoCaptureConfig?.maxWidth ?: bitmap?.width
+                            val maxHeight = photoCaptureConfig?.maxHeight ?: bitmap?.height
+
+                            val resized = CommanHelper.resizeBitmap(bitmap as Bitmap, maxWidth!!, maxHeight!!)
+                            val stream = ByteArrayOutputStream()
+
+                            val jpegQuality = when(photoCaptureConfig?.quality) {
+                                CaptureQuality.LOW -> 60
+                                CaptureQuality.MEDIUM -> 80
+                                CaptureQuality.HIGH -> 95
+                                else -> 80
+                            }
+
+                            resized.compress(
+                                Bitmap.CompressFormat.JPEG,
+                                jpegQuality,
+                                stream
+                            )
+
+                            base64ImageCompress = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                        }
 
                         val output = Arguments.createMap().apply {
                             putString("name",name)
                             putString("uri",savedUri.toString())
                             putString("path", savedUri.path)
                             putDouble("size", size.toDouble())
-                            putInt("imageWidth",width)
-                            putInt("imageHeight",height)
+                            putDouble("imageWidth",width.toDouble())
+                            putDouble("imageHeight",height.toDouble())
                             putString("mimeType", mimeType)
                         }
 
@@ -584,7 +829,7 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
                         }
 
                         if(photoCaptureConfig?.compressBase64ImageOutput == true){
-                            output.putString("base64ImageCompress", base64Image)
+                            output.putString("base64ImageCompress", base64ImageCompress)
                         }
 
                         onSendReactNativeEvent(CAPTURE_PHOTO_TAG, output)
@@ -634,7 +879,6 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
                         onSendReactNativeEvent(CAPTURE_PHOTO_TAG, output)
 
                         isCapturingPhoto = false
-
                     }
 
                     override fun onError(exception: ImageCaptureException) {
@@ -651,6 +895,77 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
                 }
             )
         }
+    }
+
+    /**
+     * Represents the torch (flashlight) mode for the camera. ON/OFF
+     */
+    fun setTorchMode(mode: TorchMode){
+        torchMode = mode
+
+        //Add Torch Layout View
+        torchButtonLayoutView()
+    }
+
+    /**
+     * Torch Button Layout View Setup
+     */
+    private fun torchButtonLayoutView(){
+
+        if(torchMode == TorchMode.ON){
+            torchButton.setImageResource(R.drawable.ic_torch_on)
+            //torchButton.setPadding(0,10,0,0)
+        }
+        else{
+            torchButton.setImageResource(R.drawable.ic_torch_off)
+        }
+
+        torchButton.setBackgroundColor(Color.TRANSPARENT)
+
+        rightSideContainerOfTopOverlay.addView(torchButton)
+
+        torchButton.setOnClickListener {
+
+            torchButton.animate()
+                .scaleX(0.85f)
+                .scaleY(0.85f)
+                .setDuration(80)
+                .withEndAction {
+
+                    toggleTorchMode()
+
+                    torchButton.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(120)
+                        .start()
+                }
+                .start()
+
+        }
+    }
+
+    /**
+     * Switch torch mode ON -> OFF -> ON
+     */
+    private fun toggleTorchMode(){
+
+        torchMode = when(torchMode){
+            TorchMode.ON -> TorchMode.OFF
+            TorchMode.OFF -> TorchMode.ON
+        }
+
+        when (torchMode) {
+            TorchMode.ON -> camera?.cameraControl?.enableTorch(true)
+            TorchMode.OFF -> camera?.cameraControl?.enableTorch(false)
+        }
+
+        val icon = when (torchMode) {
+            TorchMode.ON -> R.drawable.ic_torch_on
+            TorchMode.OFF -> R.drawable.ic_torch_off
+        }
+
+        torchButton.setImageResource(icon)
     }
 
     /**
