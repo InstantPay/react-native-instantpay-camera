@@ -107,16 +107,51 @@ type CameraFacing = WithDefault<"FRONT" | "BACK", "BACK">;
  */
 type TorchMode = WithDefault<"ON" | "OFF", "OFF">;
 
+
+/**
+ * OCR Language Type
+ * @typedef {('EN' | 'HI')} OCRLanguage
+ * @description Represents the language options for OCR (Optical Character Recognition) processing.
+ * - 'EN': Indicates English language for OCR processing.
+ * - 'HI': Indicates Hindi language for OCR processing.
+ */
+type OCRLanguage = WithDefault<"EN" | "HI", "EN">;
+
+/**
+ * OCR Configuration Interface
+ * @interface OCRConfig
+ * @property {string} language - The language to be used for OCR processing (e.g., 'en' for English).
+ * @property {boolean} detectAadhaar - Whether to enable Aadhaar card detection during OCR processing.
+ * @property {boolean} detectPan - Whether to enable PAN card detection during OCR processing.
+ */
+interface OCRConfig {
+	language?: OCRLanguage;
+	detectAadhaar?: boolean;
+	detectPan?: boolean;
+}
+
+/**
+ * Text Detected Callbacks Events Parameters
+ * @interface DetectTextEventData
+ * @property {string} detectedText - The text that was detected by the OCR process.
+ * @description This interface defines the structure of the event data that is passed to the onTextDetectedCallback when text is detected in the captured image. The detectedText property contains the text that was recognized by the OCR process.
+ */
+interface DetectTextEventData {
+	detectedText: string;
+}
+
 interface NativeProps extends ViewProps {
   	color?: ColorValue;
 	cameraFacing?: CameraFacing;
 	torchMode?: TorchMode;
 	photoCaptureConfig?: PhotoCaptureConfig;
+	ocrConfig?: OCRConfig;
 	onCloseCallback?: BubblingEventHandler<Readonly<CloseEventData>>;
 	onErrorCallback?: BubblingEventHandler<Readonly<ErrorEventData>>;
     onSuccessCallback?: BubblingEventHandler<Readonly<SuccessEventData>>;
 	onCameraStartedCallback?: BubblingEventHandler<Readonly<CameraStartedEventData>>;
 	onPhotoCapturedCallback?: BubblingEventHandler<Readonly<PhotoCapturedEventData>>;
+	onTextDetectedCallback?: BubblingEventHandler<Readonly<DetectTextEventData>>;
 }
 
 export default codegenNativeComponent<NativeProps>('InstantpayCameraView');

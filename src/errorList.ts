@@ -9,4 +9,5 @@ export enum ErrorCodes {
     USER_CANCELLED = 'User cancelled the camera',
     STOP_CAMERA_FAILED = 'Failed to stop camera',
     FAILED_CAPTURE = 'Failed to capture photo',
+    OCR_FAILED = 'Failed to perform OCR on captured image',
 }

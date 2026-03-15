@@ -70,6 +70,9 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     private val topOverlaySpaceBetween = View(context)
     private val rightSideContainerOfTopOverlay = LinearLayout(context)
     private val bottomOverlayBar = LinearLayout(context)
+    private val leftSideContainerOfBottomOverlay = LinearLayout(context)
+    private val centerContainerOfBottomOverlay = LinearLayout(context)
+    private val rightSideContainerOfBottomOverlay = LinearLayout(context)
     private val closeButton = AppCompatImageButton(context) //For Close button
     private val cameraFlashButton = AppCompatImageButton(context) //Camera Flash Button
     private val cameraCaptureButton = AppCompatImageButton(context) //Camera Capture Button
@@ -89,6 +92,7 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     private val CLOSE_TAG = "CLOSE"
     private val CAMERA_STARTED_TAG = "CAMERA_STARTED"
     private val CAPTURE_PHOTO_TAG = "CAPTURE_PHOTO"
+    private val DETECT_TEXT_TAG = "DETECT_TEXT"
 
     private val callbackMethodsName = mapOf<String,String>(
         "SUCCESS" to "onSuccessCallback",
@@ -96,6 +100,7 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
         "CLOSE" to "onCloseCallback",
         "CAMERA_STARTED" to "onCameraStartedCallback",
         "CAPTURE_PHOTO" to "onPhotoCapturedCallback",
+        "DETECT_TEXT" to "onTextDetectedCallback",
     )
 
     /** Photo Capture Config Section **/
@@ -104,6 +109,14 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     private var imageCapture: ImageCapture? = null
 
     /** End Photo Capture Config Section **/
+
+    /** OCR Config Section **/
+    private var ocrConfig: OcrConfigMetadata? = null
+    private var imageAnalysis : ImageAnalysis? = null
+    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private var ocrLastProcessTime = 0L
+
+    /** End OCR Config Section **/
 
 
     companion object {
@@ -117,9 +130,6 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
         //Add Top Overlay Bar
         topOverlayLayoutView()
-
-        //Add Bottom Overlay Bar
-        bottomOverlayLayoutView()
 
         // Overlay that will flash when capture the photo
         flashOverlay.setBackgroundColor(Color.WHITE)
@@ -231,16 +241,76 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     private fun bottomOverlayLayoutView(){
 
         bottomOverlayBar.setBackgroundColor(Color.parseColor("#90000000"))
-        bottomOverlayBar.gravity = Gravity.CENTER
         bottomOverlayBar.orientation = LinearLayout.HORIZONTAL
+        bottomOverlayBar.gravity = Gravity.CENTER_VERTICAL
 
         val bottomParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
-            250
+            200
         )
 
         bottomParams.gravity = Gravity.BOTTOM
         addView(bottomOverlayBar, bottomParams)
+
+        //Add Left Side Container
+        leftSideContainerBottomOverlayLayout()
+
+        //Add Center Container
+        centerContainerBottomOverlayLayout()
+
+        //Add Right SIde Container
+        rightSideContainerBottomOverlayLayout()
+    }
+
+    /**
+     * Left Side Container Item for Bottom Overlay Layout
+     */
+    private fun leftSideContainerBottomOverlayLayout(){
+
+        val leftParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        leftParams.weight = 1f
+
+        bottomOverlayBar.addView(leftSideContainerOfBottomOverlay, leftParams)
+    }
+
+    /**
+     * Center Container Item for Bottom Overlay Layout
+     */
+    private fun centerContainerBottomOverlayLayout(){
+
+        val centerParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        centerParams.weight = 1f
+
+        centerContainerOfBottomOverlay.gravity = Gravity.CENTER
+
+        bottomOverlayBar.addView(centerContainerOfBottomOverlay, centerParams)
+    }
+
+    /**
+     * Right Side Container Item for Bottom Overlay Layout
+     */
+    private fun rightSideContainerBottomOverlayLayout(){
+
+        val rightParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        rightParams.weight = 1f
+
+        rightSideContainerOfBottomOverlay.gravity = Gravity.END
+
+        rightSideContainerOfBottomOverlay.setPadding(0,0,20,0)
+
+        bottomOverlayBar.addView(rightSideContainerOfBottomOverlay, rightParams)
     }
 
     /**
@@ -371,17 +441,17 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     private fun cameraSwitchButtonLayoutView(){
         switchCameraButton.setImageResource(R.drawable.outline_cameraswitch_24)
 
-        switchCameraButton.layoutParams = LayoutParams(
+        /*switchCameraButton.layoutParams = LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.END
             setMargins(32, 32, 32, 60)
-        }
+        }*/
 
         switchCameraButton.setBackgroundColor(Color.TRANSPARENT)
 
-        addView(switchCameraButton)
+        rightSideContainerOfBottomOverlay.addView(switchCameraButton)
 
         switchCameraButton.setOnClickListener {
             switchCamera()
@@ -409,15 +479,22 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
         cameraCaptureButton.setImageResource(R.drawable.capture_button)
 
-        cameraCaptureButton.layoutParams = LayoutParams(
+        /*cameraCaptureButton.layoutParams = LayoutParams(
             180,
             180
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
             bottomMargin = 50
-        }
+        }*/
+
+        cameraCaptureButton.layoutParams = LinearLayout.LayoutParams(
+            160,
+            160
+        )
 
         cameraCaptureButton.setBackgroundColor(Color.TRANSPARENT)
+
+        centerContainerOfBottomOverlay.addView(cameraCaptureButton)
 
         cameraCaptureButton.setOnClickListener {
 
@@ -453,8 +530,6 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
                 }
                 .start()
         }
-
-        addView(cameraCaptureButton)
     }
 
     /**
@@ -603,6 +678,25 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
 
                     useCases.add(imageCapture!!)
                 }
+                else if(ocrConfig != null){ //Configuration Set for OCR Detect Text
+                    CommanHelper.logPrint(CLASS_TAG_NAME,"ocrConfig is set to Detect Text")
+
+                    imageAnalysis = ImageAnalysis
+                        .Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+
+                    imageAnalysis?.setAnalyzer(
+                        ContextCompat.getMainExecutor(context)
+                    ){ imageProxy ->
+
+                        CommanHelper.logPrint(CLASS_TAG_NAME, "Pass to  processImage method ${imageProxy}")
+
+                        processImageProxy(imageProxy)
+                    }
+
+                    useCases.add(imageAnalysis!!)
+                }
 
                 camera = cameraProvider?.bindToLifecycle(
                     activity,
@@ -702,6 +796,9 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
         CommanHelper.logPrint(CLASS_TAG_NAME,"photoCaptureConfig : ${photoCaptureConfig}")
 
         flashMode = photoCaptureConfig?.flash!!
+
+        //Add Bottom Overlay Bar
+        bottomOverlayLayoutView()
 
         //Add Camera Flash Button Layout View
         cameraFlashButtonLayoutView()
@@ -966,6 +1063,81 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
         }
 
         torchButton.setImageResource(icon)
+    }
+
+    /**
+     * Set Configuration of OCR to detect text from image
+     */
+    fun setOcrConfig(config: OcrConfigMetadata?){
+        ocrConfig = config
+        CommanHelper.logPrint(CLASS_TAG_NAME,"ocrConfig : ${ocrConfig}")
+    }
+
+    /**
+     * Get OCR Detected Text
+     * Delay	Use case
+     * 300 ms	fast scanning
+     * 500 ms	balanced
+     * 800 ms	low CPU
+     * OCR runs every 500ms → ~2 times/sec → smooth performance
+     */
+    private fun processImageProxy(imageProxy: ImageProxy){
+
+        val now = System.currentTimeMillis()
+
+        if (now - ocrLastProcessTime < 500) {
+            imageProxy.close()
+            return
+        }
+
+        ocrLastProcessTime = now
+
+        val mediaImage = imageProxy.image
+        if (mediaImage == null) {
+            imageProxy.close()
+            return
+        }
+
+        val image = InputImage.fromMediaImage(
+            mediaImage,
+            imageProxy.imageInfo.rotationDegrees
+        )
+
+        textRecognizer.process(image)
+            .addOnSuccessListener { visionText ->
+
+                val detectedText = visionText.text
+
+                if (detectedText.isNotEmpty()) {
+
+                    var finalText = detectedText
+
+                    CommanHelper.logPrint(CLASS_TAG_NAME, "processImage: ${finalText}")
+
+                    val output = Arguments.createMap().apply {
+                        putString("detectedText",finalText)
+                    }
+
+                    onSendReactNativeEvent(DETECT_TEXT_TAG, output)
+                    return@addOnSuccessListener
+                }
+
+            }
+            .addOnFailureListener { e ->
+                // optional error handling
+                val output = Arguments.createMap().apply {
+                    putString("code", "OCR_FAILED")
+                    putString("errorMessage", e.message)
+                    putString("errorCause", e.cause.toString())
+                    putString("recoverySuggestion", e.stackTrace.toString())
+                }
+
+                onSendReactNativeEvent(ERROR_TAG,output)
+                return@addOnFailureListener
+            }
+            .addOnCompleteListener {
+                imageProxy.close()
+            }
     }
 
     /**

@@ -43,6 +43,7 @@ class InstantpayCameraViewManager : SimpleViewManager<InstantpayCameraView>(),
             "onSuccessCallback" to mapOf("registrationName" to "onSuccessCallback"),
             "onCameraStartedCallback" to mapOf("registrationName" to "onCameraStartedCallback"),
             "onPhotoCapturedCallback" to mapOf("registrationName" to "onPhotoCapturedCallback"),
+            "onTextDetectedCallback" to mapOf("registrationName" to "onTextDetectedCallback"),
         )
     }
 
@@ -206,4 +207,57 @@ class InstantpayCameraViewManager : SimpleViewManager<InstantpayCameraView>(),
             view?.setTorchMode(validTorchMode)
         }
     }
+
+    @ReactProp(name="ocrConfig")
+    override fun setOcrConfig(view: InstantpayCameraView?, config: ReadableMap?){
+
+        if (config == null) {
+            view?.setOcrConfig(null)
+            return
+        }
+
+        val normalized = Arguments.createMap()
+
+        var validLSupportedLang = OCRLanguage.EN
+        if (config.hasKey("language")) {
+
+            val language = config.getString("language")
+
+            val validLanguage = when (language) {
+                "EN" -> OCRLanguage.EN
+                "HI" -> OCRLanguage.HI
+                else -> OCRLanguage.EN
+            }
+
+            validLSupportedLang = validLanguage
+        }
+
+        //Is Detect Aadhaar is enable or disable
+        if (config.hasKey("detectAadhaar")) {
+            val detectAadhaar = config.getBoolean("detectAadhaar")
+            normalized.putBoolean("detectAadhaar", detectAadhaar)
+
+        } else {
+            normalized.putBoolean("detectAadhaar", false)
+        }
+
+        //Is Detect Pan is enable or disable
+        if (config.hasKey("detectPan")) {
+            val detectPan = config.getBoolean("detectPan")
+            normalized.putBoolean("detectPan", detectPan)
+
+        } else {
+            normalized.putBoolean("detectPan", false)
+        }
+
+        view?.setOcrConfig(
+            OcrConfigMetadata(
+                language = validLSupportedLang,
+                detectAadhaar = normalized.getBoolean("detectAadhaar"),
+                detectPan = normalized.getBoolean("detectPan"),
+            )
+        )
+    }
+
+
 }
