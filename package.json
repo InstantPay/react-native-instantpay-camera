@@ -1,6 +1,6 @@
 {
   "name": "react-native-instantpay-camera",
-  "version": "0.1.0",
+  "version": "1.1.1",
   "description": "A React Native camera library enables developers to access and control a device’s camera (front/back) directly from a React Native application. It allows building features like photo capture, video recording, QR/barcode scanning, document scanning, face detection, and real-time image processing.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -42,8 +42,12 @@
   },
   "keywords": [
     "react-native",
-    "ios",
-    "android"
+    "camera",
+    "ipay camera",
+    "ipay camera ocr",
+    "detect text",
+    "instantpay camera",
+    "instantpay ocr"
   ],
   "repository": {
     "type": "git",

@@ -1,9 +1,7 @@
 package com.instantpaycamera
 
 import android.content.ContentValues
-import android.content.Context
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -12,26 +10,16 @@ import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.util.AttributeSet
 import android.util.Base64
-import android.util.Log
 import android.util.Size
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import androidx.annotation.OptIn
 import androidx.camera.core.*
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.LifecycleCameraController
-import androidx.camera.view.PreviewView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.DefaultLifecycleObserver
-import java.util.concurrent.Executors
 import androidx.lifecycle.LifecycleOwner
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactContext
@@ -41,15 +29,17 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import android.view.TextureView
 import android.view.ViewGroup
 import android.view.Surface
-import android.widget.Button
 import android.widget.LinearLayout
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
-import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -113,8 +103,10 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     /** OCR Config Section **/
     private var ocrConfig: OcrConfigMetadata? = null
     private var imageAnalysis : ImageAnalysis? = null
-    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private var textRecognizer : TextRecognizer? = null
     private var ocrLastProcessTime = 0L
+    private val aadhaarRegex = Regex("\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b")
+    private val panRegex = Regex("\\b[A-Z]{5}[0-9]{4}[A-Z]\\b")
 
     /** End OCR Config Section **/
 
@@ -1071,6 +1063,13 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
     fun setOcrConfig(config: OcrConfigMetadata?){
         ocrConfig = config
         CommanHelper.logPrint(CLASS_TAG_NAME,"ocrConfig : ${ocrConfig}")
+
+        textRecognizer = if (ocrConfig?.language == OCRLanguage.HI){
+            TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
+        } else {
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        }
+
     }
 
     /**
@@ -1103,25 +1102,88 @@ class InstantpayCameraView(private val context: ReactContext) : FrameLayout(cont
             imageProxy.imageInfo.rotationDegrees
         )
 
-        textRecognizer.process(image)
+        textRecognizer!!.process(image)
             .addOnSuccessListener { visionText ->
 
-                val detectedText = visionText.text
+                var resultText = visionText.text
 
-                if (detectedText.isNotEmpty()) {
+                if (resultText.isNotEmpty()) {
 
-                    var finalText = detectedText
+                    CommanHelper.logPrint(CLASS_TAG_NAME, "processImage: ${resultText}")
 
-                    CommanHelper.logPrint(CLASS_TAG_NAME, "processImage: ${finalText}")
+                    val blocksArray = JSONArray()
+
+                    for (block in visionText.textBlocks) {
+
+                        val blockObj = JSONObject().apply {
+                            put("blockText", block.text)
+                            put("blockCornerPoints", block.cornerPoints?.joinToString())
+                            put("blockFrame", block.boundingBox?.toShortString())
+                        }
+
+                        val linesArray = JSONArray()
+
+                        for (line in block.lines) {
+
+                            val lineObj = JSONObject().apply {
+                                put("lineText", line.text)
+                                put("lineCornerPoints", line.cornerPoints?.joinToString())
+                                put("lineFrame", line.boundingBox?.toShortString())
+                            }
+
+                            val elementsArray = JSONArray()
+
+                            for (element in line.elements) {
+
+                                val elementObj = JSONObject().apply {
+                                    put("elementText", element.text)
+                                    put("elementCornerPoints", element.cornerPoints?.joinToString())
+                                    put("elementFrame", element.boundingBox?.toShortString())
+                                }
+
+                                elementsArray.put(elementObj)
+                            }
+
+                            lineObj.put("elements", elementsArray)
+
+                            linesArray.put(lineObj)
+                        }
+
+                        blockObj.put("lines", linesArray)
+
+                        blocksArray.put(blockObj)
+                    }
 
                     val output = Arguments.createMap().apply {
-                        putString("detectedText",finalText)
+                        putString("detectedText",resultText)
+                        putString("blocks",blocksArray.toString())
+                    }
+
+                    if(ocrConfig?.detectAadhaar == true){
+                        val match = aadhaarRegex.find(resultText)
+                        if (match != null) {
+                            val aadhaar = match.value
+                                .replace(" ", "")
+                                .replace("-", "")
+
+                            output.putString("matchedValue",aadhaar)
+                        }
+                    }
+
+                    if(ocrConfig?.detectPan == true){
+                        val match = panRegex.find(resultText)
+                        if (match != null) {
+                            val matchedPan = match.value
+                                .replace(" ", "")
+                                .replace("-", "")
+
+                            output.putString("matchedValue",matchedPan)
+                        }
                     }
 
                     onSendReactNativeEvent(DETECT_TEXT_TAG, output)
                     return@addOnSuccessListener
                 }
-
             }
             .addOnFailureListener { e ->
                 // optional error handling

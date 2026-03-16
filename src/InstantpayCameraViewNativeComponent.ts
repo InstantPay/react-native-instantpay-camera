@@ -74,6 +74,8 @@ interface PhotoCapturedEventData {
  * @property {('LOW' | 'MEDIUM' | 'HIGH')} quality - The quality of the captured photo.
  * @property {('AUTO' | 'ON' | 'OFF')} flash - The flash mode for capturing the photo.
  * @property {boolean} saveToGallery - Whether to save the captured photo to the gallery.
+ * @property {number} maxWidth - The maximum width of the captured photo.
+ * @property {number} maxHeight - The maximum height of the captured photo.
  * @property {boolean} base64ImageOutput - Whether to output the captured photo as a base64 string.
  * @property {boolean} compressBase64ImageOutput - Whether to compress the base64 image output.
  * @property {boolean} captureSound - Capture Sound enable/disable while taking photo. default:true
@@ -118,7 +120,7 @@ type TorchMode = WithDefault<"ON" | "OFF", "OFF">;
 type OCRLanguage = WithDefault<"EN" | "HI", "EN">;
 
 /**
- * OCR Configuration Interface
+ * OCR Configuration (Detect Text from Image) Interface
  * @interface OCRConfig
  * @property {string} language - The language to be used for OCR processing (e.g., 'en' for English).
  * @property {boolean} detectAadhaar - Whether to enable Aadhaar card detection during OCR processing.
@@ -131,15 +133,58 @@ interface OCRConfig {
 }
 
 /**
+ * OCR Detected Text Block Interface
+ * @interface OCRDetectedTextBlock
+ * @property {string} blockText - The text content of the detected block.
+ * @property {string} blockCornerPoints - The corner points of the detected block in the image.
+ * @property {string} blockFrame - The frame information of the detected block.
+ * @property {Array} lines - An array of lines contained within the detected block, where each line has its own text, corner points, and frame information.
+ */
+type OCRDetectedTextBlock = {
+	blockText: string;
+	blockCornerPoints: string;
+	blockFrame: string;
+	lines?: {
+		lineText: string;
+		lineCornerPoints: string;
+		lineFrame: string;
+		elements?: {
+			elementText: string;
+			elementCornerPoints: string;
+			elementFrame: string;
+		}[];
+	}[];
+};
+
+/**
  * Text Detected Callbacks Events Parameters
  * @interface DetectTextEventData
  * @property {string} detectedText - The text that was detected by the OCR process.
+ * @property {OCRDetectedTextBlock} [blocks] - Optional property that contains detailed information about the detected text blocks, including their text content, corner points, and frame information.
  * @description This interface defines the structure of the event data that is passed to the onTextDetectedCallback when text is detected in the captured image. The detectedText property contains the text that was recognized by the OCR process.
  */
 interface DetectTextEventData {
 	detectedText: string;
+	blocks?: string; // JSON stringified OCRDetectedTextBlock
+	matchedValue?: string; // The value matched based on the ocrConfig (e.g., Aadhaar or PAN)
 }
 
+/**
+ * NativeProps Interface
+ * @interface NativeProps
+ * @property {ColorValue} [color] - An optional color value that can be used to customize the appearance of the camera view.
+ * @property {CameraFacing} [cameraFacing] - An optional property to specify the camera lens facing direction (front or back).
+ * @property {TorchMode} [torchMode] - An optional property to specify the torch mode (on or off) for the camera.
+ * @property {PhotoCaptureConfig} [photoCaptureConfig] - An optional configuration object for photo capture settings.
+ * @property {OCRConfig} [ocrConfig] - An optional configuration object for OCR processing settings.
+ * @property {BubblingEventHandler<Readonly<CloseEventData>>} [onCloseCallback] - An optional event handler that is called when the camera view is closed, providing close event data.
+ * @property {BubblingEventHandler<Readonly<ErrorEventData>>} [onErrorCallback] - An optional event handler that is called when an error occurs, providing error event data.
+ * @property {BubblingEventHandler<Readonly<SuccessEventData>>} [onSuccessCallback] - An optional event handler that is called when an operation is successful, providing success event data.
+ * @property {BubblingEventHandler<Readonly<CameraStartedEventData>>} [onCameraStartedCallback] - An optional event handler that is called when the camera has started, providing camera started event data.
+ * @property {BubblingEventHandler<Readonly<PhotoCapturedEventData>>} [onPhotoCapturedCallback] - An optional event handler that is called when a photo has been captured, providing photo captured event data.
+ * @property {BubblingEventHandler<Readonly<DetectTextEventData>>} [onTextDetectedCallback] - An optional event handler that is called when text has been detected in the captured image, providing detected text event data.
+ * @description This interface defines the properties that can be passed to the native camera view component, including configuration options for the camera and event handlers for various callbacks related to camera operations, photo capture, and OCR text detection.
+ */
 interface NativeProps extends ViewProps {
   	color?: ColorValue;
 	cameraFacing?: CameraFacing;

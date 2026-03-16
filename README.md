@@ -4,8 +4,11 @@ A React Native camera library enables developers to access and control a device�
 
 ## Features
 
-✅ Capture Photo
 
+| Features      | Android | iOS   |
+| :-----------  | :------ | :-----|
+| Capture Photo |   ✅    |   ❌   |
+| OCR           |   ✅    |   ❌   |  
 
 
 ## Installation
@@ -20,8 +23,55 @@ npm install react-native-instantpay-camera
 Available Options List:
 
 ```typescript
-- Capture Photo Props
-    -
+- cameraFacing : Represents the camera lens facing direction
+    - Possible List : FRONT, BACK 
+    - Default Value : BACK
+- torchMode : Represents the torch (flashlight) mode for the camera.
+    - Possible List : ON, OFF 
+    - Default Value : OFF
+- photoCaptureConfig : Photo Capture Configuration
+    - quality : The quality of the captured photo.
+        - Possible List : LOW , MEDIUM , HIGH
+        - Default Value : MEDIUM
+    - flash : The flash mode for capturing the photo.
+        - Possible List : AUTO , ON , OFF
+        - Default Value : AUTO
+    - saveToGallery : Whether to save the captured photo to the gallery.
+        - Boolean : TRUE/FALSE
+        - Default Value : FALSE
+    - maxWidth : The maximum width of the captured photo. (Eg: 890,1200 etc)
+    - maxHeight : The maximum height of the captured photo. (Eg: 890,1200 etc)
+    - base64ImageOutput : Whether to output the captured photo as a base64 string.
+        - Boolean : TRUE/FALSE
+        - Default Value : FALSE
+    - compressBase64ImageOutput : Whether to compress the base64 image output.
+        - Boolean : TRUE/FALSE
+        - Default Value : FALSE
+    - captureSound : Capture Sound enable/disable while taking photo
+        - Boolean : TRUE/FALSE
+        - Default Value : TRUE
+- ocrConfig : OCR Configuration (Detect Text from Image)
+    - language : The language to be used for OCR processing.
+        - Possible List : EN , HI
+        - Default Value : EN
+    - detectAadhaar : Whether to enable Aadhaar card Number detection during OCR processing.
+        - Boolean : TRUE/FALSE
+        - Default Value : FALSE
+    - detectPan : Whether to enable PAN card detection during OCR processing.
+        - Boolean : TRUE/FALSE
+        - Default Value : FALSE
+        
+```
+
+Available Callback Methods List:
+
+```typescript
+- onCloseCallback : Event handler that is called when the camera view is closed, providing close event data.
+- onErrorCallback : Event handler that is called when an error occurs, providing error event data.
+- onSuccessCallback : Event handler that is called when an operation is successful, providing success event data.
+- onCameraStartedCallback : Event handler that is called when the camera has started, providing camera started event data.
+- onPhotoCapturedCallback : Event handler that is called when a photo has been captured, providing photo captured event data.
+- onTextDetectedCallback : Event handler that is called when text has been detected in the captured image, providing detected text event data.
 
 ```
 
@@ -29,19 +79,29 @@ Available Options List:
 
 
 ```js
-import { InstantpayCameraView } from "react-native-instantpay-camera";
+import { InstantpayCamera } from "react-native-instantpay-camera";
 
 // ...
 
-<InstantpayCameraView  />
+<InstantpayCamera
+    cameraFacing={{'BACK'}}
+    photoCaptureConfig={{
+        quality : 'MEDIUM'
+    }}
+    ocrConfig={{
+        language:'EN',
+    }}
+    onCloseCallback={(event) => {
+        console.log(event.nativeEvent)
+    }}
+    onErrorCallback={(event) => {
+        console.log(event.nativeEvent)
+    }}
+    onSuccessCallback={(event) => {
+        console.log(event.nativeEvent)
+    }}
+/>
 ```
-
-
-## Contributing
-
-- [Development workflow](CONTRIBUTING.md#development-workflow)
-- [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request)
-- [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## License
 
@@ -49,4 +109,4 @@ MIT
 
 ---
 
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+Created By [Instantpay](https://www.instantpay.in)

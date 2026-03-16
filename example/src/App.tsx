@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet, Button, Modal, Text, Pressable, Alert, ScrollView, Dimensions } from 'react-native';
-import { InstantpayCameraView } from 'react-native-instantpay-camera';
+import { InstantpayCamera } from 'react-native-instantpay-camera';
 
 const windowDimensions = Dimensions.get('window');
 const screenDimensions = Dimensions.get('screen');
@@ -31,6 +31,10 @@ export default function App() {
 		console.log('onPhotoCapturedCallbackHandeler',event.nativeEvent)
 	}
 
+	const onTextDetectedCallbackHandeler = (event:any) => {
+		console.log('onTextDetectedCallbackHandeler',event.nativeEvent)
+	}
+
 	return (
 		<View style={styles.container}>
 			<Modal
@@ -45,20 +49,20 @@ export default function App() {
 			>
 					<ScrollView style={styles.scrollStyle}>
 						<View style={styles.centeredView}>
-							<InstantpayCameraView 
+							<InstantpayCamera 
 								style={styles.box} 
-								color="#32a852"
-								photoCaptureConfig={{
-									cameraFacing: "BACK",
-									quality: "HIGH",
-									flash: "ON",
-									//saveToGallery: true
+								//color="#32a852"
+								ocrConfig={{
+									language:'EN',
+									detectAadhaar:true,
+									detectPan:true
 								}}
 								onCloseCallback={(event) => onCloseCallbackHandeler(event)}
 								onErrorCallback={(event) => onErrorCallbackHandeler(event)}
 								onSuccessCallback={(event) => onSuccessCallbackHandeler(event)}
 								onCameraStartedCallback={(event) => onCameraStartedCallbackHandeler(event)}
 								onPhotoCapturedCallback={(event) => onPhotoCapturedCallbackHandeler(event)}
+								onTextDetectedCallback={(event) => onTextDetectedCallbackHandeler(event)}
 							/>
 						</View>
 						<Pressable style={[styles.button, styles.buttonClose]}
