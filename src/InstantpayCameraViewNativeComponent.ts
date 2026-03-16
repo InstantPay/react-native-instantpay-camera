@@ -133,30 +133,6 @@ interface OCRConfig {
 }
 
 /**
- * OCR Detected Text Block Interface
- * @interface OCRDetectedTextBlock
- * @property {string} blockText - The text content of the detected block.
- * @property {string} blockCornerPoints - The corner points of the detected block in the image.
- * @property {string} blockFrame - The frame information of the detected block.
- * @property {Array} lines - An array of lines contained within the detected block, where each line has its own text, corner points, and frame information.
- */
-type OCRDetectedTextBlock = {
-	blockText: string;
-	blockCornerPoints: string;
-	blockFrame: string;
-	lines?: {
-		lineText: string;
-		lineCornerPoints: string;
-		lineFrame: string;
-		elements?: {
-			elementText: string;
-			elementCornerPoints: string;
-			elementFrame: string;
-		}[];
-	}[];
-};
-
-/**
  * Text Detected Callbacks Events Parameters
  * @interface DetectTextEventData
  * @property {string} detectedText - The text that was detected by the OCR process.
