@@ -7,6 +7,7 @@
 #import <react/renderer/components/InstantpayCameraViewSpec/RCTComponentViewHelpers.h>
 
 #import "RCTFabricComponentsPlugins.h"
+#import "InstantpayCamera-Swift.h"
 
 using namespace facebook::react;
 
