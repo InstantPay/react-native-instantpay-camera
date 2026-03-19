@@ -10,7 +10,7 @@ import UIKit
 import AVFoundation
 
 @objc(IpayCameraView)
-class IpayCameraView: UIView {
+public class IpayCameraView: UIView {
     
     private let CLASS_TAG = "*IpayCameraView"
     private let topOverlayBar = UIView()
@@ -28,7 +28,7 @@ class IpayCameraView: UIView {
     
     /*** Camera Setup Config **/
     private let cameraSession = AVCaptureSession()
-    private var cameraPreviewLayer: AVCaptureVideoPreviewLayer!
+    private var cameraPreviewLayer: AVCaptureVideoPreviewLayer?
     private var cameraCurrentInput: AVCaptureDeviceInput?
     /***End  Camera Setup Config **/
     
@@ -51,7 +51,7 @@ class IpayCameraView: UIView {
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView destroyed")
     }
     
-    override func didMoveToSuperview() {
+    public override func didMoveToSuperview() {
         super.didMoveToSuperview()
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView is ready : didMoveToSuperview")
     }
@@ -59,7 +59,7 @@ class IpayCameraView: UIView {
     
     /// This Method is useful Whenever your view needs to layout (position/resize) its children
     ///Whenever my view size changes → fix all child layouts
-    override func layoutSubviews() {
+    public override func layoutSubviews() {
         super.layoutSubviews()
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView called layoutSubviews")
         
@@ -106,7 +106,7 @@ class IpayCameraView: UIView {
         )
         
         // camera preview only inside bodyContainer
-        cameraPreviewLayer.frame = bodyContainer.bounds
+        cameraPreviewLayer?.frame = bodyContainer.bounds
         
     }
     
@@ -218,6 +218,9 @@ class IpayCameraView: UIView {
         
         // Remove from parent view
         //self.removeFromSuperview()
+        
+        // Stop Camera and cameraSession data
+        stopCamera()
     }
     
     ///This Layout Handle Center or Body Layout of Screen
@@ -275,8 +278,16 @@ class IpayCameraView: UIView {
         switch status {
             case .authorized:
                 startCamera()
+            
+            case .notDetermined:
+                // First time asking; show the system prompt
+                AVCaptureDevice.requestAccess(for: .video) { granted in
+                    if granted {
+                        self.startCamera()
+                    }
+                }
 
-            case .denied, .restricted, .notDetermined:
+            case .denied, .restricted:
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.onSendRNEvent(
                         eventName: "ERRORED",
@@ -289,7 +300,16 @@ class IpayCameraView: UIView {
                 }
 
             @unknown default:
-                break
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.onSendRNEvent(
+                        eventName: "ERRORED",
+                        eventData: [
+                            "code": "CAMERA_PERMISSION_NOT_GRANTED",
+                            "errorMessage": "Camera permission not granted",
+                            "errorCause": "Camera permission not granted",
+                            "recoverySuggestion": ""
+                        ])
+                }
         }
     }
     
@@ -311,10 +331,10 @@ class IpayCameraView: UIView {
         
         ///create preview layer
         cameraPreviewLayer = AVCaptureVideoPreviewLayer(session: cameraSession)
-        cameraPreviewLayer.videoGravity = .resizeAspectFill
+        cameraPreviewLayer?.videoGravity = .resizeAspectFill
         
         ///IMPORTANT: add camera preview to bodyContainer
-        bodyContainer.layer.addSublayer(cameraPreviewLayer)
+        bodyContainer.layer.addSublayer(cameraPreviewLayer!)
         
         cameraSession.beginConfiguration()
         
@@ -344,6 +364,25 @@ class IpayCameraView: UIView {
                 self.cameraSession.startRunning()
             }
         }
+    }
+    
+    ///Stop Camera
+    private func stopCamera(){
+        IpayCameraHelper.logPrint(classTag: CLASS_TAG, log:"stopCamera method is fired.")
+        
+        if cameraSession.isRunning {
+            cameraSession.stopRunning()
+        }
+        
+        // Remove inputs
+        //for input in cameraSession.inputs {
+        //    cameraSession.removeInput(input)
+        //}
+
+        // Remove outputs
+        //for output in cameraSession.outputs {
+        //    cameraSession.removeOutput(output)
+        //}
     }
     
     ///Helper Method Send Event to RN Side

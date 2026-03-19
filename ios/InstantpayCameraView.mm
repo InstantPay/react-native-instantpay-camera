@@ -45,7 +45,6 @@ using namespace facebook::react;
     _view.onSendReactNativeEvent = ^(NSString* actionType, NSDictionary<NSString *, id>* eventData) {
         __strong InstantpayCameraView *strongSelf = weakSelf;
         if (!strongSelf) return;
-        
         [strongSelf handleSubmit:actionType eventData:eventData];
     };
       
@@ -78,7 +77,7 @@ using namespace facebook::react;
                 facing = @"back";
                 break;
         }
-        [_view setCameraFacing:facing];
+        [_view setValue:facing forKey:@"cameraFacing"];
     }
 
     [super updateProps:props oldProps:oldProps];
@@ -176,5 +175,6 @@ using namespace facebook::react;
 }
 
 @end
+
 
 
