@@ -54,10 +54,23 @@ using namespace facebook::react;
   return self;
 }
 
+///View is being reused by Fabric, so reset/cleanup state before next use (not destroyed).
+- (void)prepareForRecycle {
+    [super prepareForRecycle];
+
+    //NSLog(@"[InstantpayCodePush.mm] updateBundle called.");
+}
+
+///Destory class Instance : Can force Fabric to destroy it and create a fresh instance every time by overriding shouldBeRecycled
++ (BOOL)shouldBeRecycled {
+    return NO; // Forces a new [[CameraView alloc] init] every time
+}
+
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
     const auto &oldViewProps = *std::static_pointer_cast<InstantpayCameraViewProps const>(_props);
     const auto &newViewProps = *std::static_pointer_cast<InstantpayCameraViewProps const>(props);
+    
 
     if (oldViewProps.color != newViewProps.color) {
         [_view setBackgroundColor: RCTUIColorFromSharedColor(newViewProps.color)];
@@ -120,7 +133,7 @@ using namespace facebook::react;
     else if([actionType  isEqual: @"CAMERA_STARTED"]){
         //React side onCameraStartedCallback fn but here OnCameraStartedCallback
         InstantpayCameraViewEventEmitter::OnCameraStartedCallback cameraStartedEvent = {
-            .status = [eventData[@"status"] boolValue],
+            .status = [eventData[@"status"] UTF8String],
         };
         
         std::dynamic_pointer_cast<const InstantpayCameraViewEventEmitter>(self->_eventEmitter)->onCameraStartedCallback(cameraStartedEvent);

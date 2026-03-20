@@ -33,27 +33,41 @@ public class IpayCameraView: UIView {
     /***End  Camera Setup Config **/
     
     
-    ///This is called when the view is created programmatically
+    ///View created (memory allocated), UI not on screen yet
     override init(frame: CGRect){
         super.init(frame: frame)
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView is init")
-        setupScreens()
+        
     }
     
     ///This is called when the view is created from: Storyboard , Interface Builder, XIB, Or some system-level decoding
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView is required init")
-        setupScreens()
+
     }
     
+    ///View destroyed (no references left, memory freed)
     deinit {
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView destroyed")
     }
     
+    ///View added to screen (safe to start camera / UI work)
     public override func didMoveToSuperview() {
         super.didMoveToSuperview()
         IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "IpayCameraView is ready : didMoveToSuperview")
+        if superview != nil {
+            setupScreens()
+        }
+       
+    }
+    
+    ///View about to be removed from screen (stop camera here)
+    public override func willMove(toSuperview newSuperview: UIView?) {
+        IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "willMove is called")
+        if newSuperview == nil {
+            stopCamera()   // cleanup
+        }
     }
     
     
@@ -220,7 +234,7 @@ public class IpayCameraView: UIView {
         //self.removeFromSuperview()
         
         // Stop Camera and cameraSession data
-        stopCamera()
+        //stopCamera()
     }
     
     ///This Layout Handle Center or Body Layout of Screen
@@ -326,6 +340,8 @@ public class IpayCameraView: UIView {
     ///Start Camera and set to view
     private func startCamera(){
         
+        IpayCameraHelper.logPrint(classTag: CLASS_TAG, log: "Camera starting...")
+        
         ///A preset value that indicates the quality level or bit rate of the output.
         cameraSession.sessionPreset = .high
         
@@ -362,6 +378,8 @@ public class IpayCameraView: UIView {
         DispatchQueue.global(qos: .userInitiated).async {
             if !self.cameraSession.isRunning {
                 self.cameraSession.startRunning()
+                
+                self.onSendRNEvent(eventName: "CAMERA_STARTED", eventData: ["status": "CAMERA_OPENED"])
             }
         }
     }
@@ -373,16 +391,6 @@ public class IpayCameraView: UIView {
         if cameraSession.isRunning {
             cameraSession.stopRunning()
         }
-        
-        // Remove inputs
-        //for input in cameraSession.inputs {
-        //    cameraSession.removeInput(input)
-        //}
-
-        // Remove outputs
-        //for output in cameraSession.outputs {
-        //    cameraSession.removeOutput(output)
-        //}
     }
     
     ///Helper Method Send Event to RN Side

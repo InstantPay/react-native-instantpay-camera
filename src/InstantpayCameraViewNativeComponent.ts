@@ -50,7 +50,7 @@ interface SuccessEventData {
  * Camera Started Callbacks Events Parameters
  */
 interface CameraStartedEventData {
-    status: boolean;
+    status: string;
 }
 
 /**
