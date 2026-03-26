@@ -10,4 +10,13 @@ export enum ErrorCodes {
     STOP_CAMERA_FAILED = 'Failed to stop camera',
     FAILED_CAPTURE = 'Failed to capture photo',
     OCR_FAILED = 'Failed to perform OCR on captured image',
+    TORCH_CONTROL_FAILED = 'Failed to control torch mode',
+    UNSUPPORTED_DEVICE = 'Unsupported device',
+    INVALID_CAMERA_CONFIG = 'Invalid camera configuration',
+    CAMERA_ALREADY_RUNNING = 'Camera is already running',
+    CAMERA_NOT_RUNNING = 'Camera is not running',
+    UNKNOWN_CAMERA_ERROR = 'An unknown camera error occurred',
+    UNKNOWN_OCR_ERROR = 'An unknown OCR error occurred',
+    UNKNOWN_TORCH_ERROR = 'An unknown torch control error occurred',
+    UNKNOWN_FLASH_ERROR = 'An unknown flash control error occurred',
 }

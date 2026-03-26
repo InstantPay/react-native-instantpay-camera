@@ -11,6 +11,7 @@ Pod::Spec.new do |s|
   s.authors      = package["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
+  #s.platforms    = { :ios => '14.0' } # 👈 update this
   s.source       = { :git => "https://github.com/InstantPay/react-native-instantpay-camera.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"

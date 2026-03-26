@@ -79,6 +79,8 @@ interface PhotoCapturedEventData {
  * @property {boolean} base64ImageOutput - Whether to output the captured photo as a base64 string.
  * @property {boolean} compressBase64ImageOutput - Whether to compress the base64 image output.
  * @property {boolean} captureSound - Capture Sound enable/disable while taking photo. default:true
+ * @property {boolean} enableConfig - To enable or disable the photo capture configuration. default:false; mandatory for iOS platform as of now.
+ * @description This interface defines the configuration options for capturing photos using the camera. It includes properties for setting the quality and flash mode of the photo, whether to save the photo to the gallery, maximum dimensions for the photo, options for base64 image output, and other related settings.
  */
 interface PhotoCaptureConfig {
     quality?: WithDefault<"LOW" | "MEDIUM" | "HIGH", "MEDIUM">;
@@ -89,6 +91,7 @@ interface PhotoCaptureConfig {
 	base64ImageOutput?: boolean;
 	compressBase64ImageOutput?: boolean;
 	captureSound?: boolean;
+	enableConfig?: boolean; // To enable or disable the photo capture configuration. default:false; mandatory for iOS platform as of now.
 }
 
 /**
@@ -102,12 +105,13 @@ type CameraFacing = WithDefault<"FRONT" | "BACK", "BACK">;
 
 /**
  * Torch Mode Type
- * @typedef {('ON' | 'OFF')} TorchMode
+ * @typedef {('ON' | 'OFF' | 'NOT_SET')} TorchMode
  * @description Represents the torch (flashlight) mode for the camera.
  * - 'ON': Indicates that the torch is turned on.
  * - 'OFF': Indicates that the torch is turned off.
+ * - 'NOT_SET': Indicates that the torch mode is not set.
  */
-type TorchMode = WithDefault<"ON" | "OFF", "OFF">;
+type TorchMode = WithDefault<"ON" | "OFF" | "NOT_SET", "NOT_SET">;
 
 
 /**

@@ -70,7 +70,6 @@ using namespace facebook::react;
 {
     const auto &oldViewProps = *std::static_pointer_cast<InstantpayCameraViewProps const>(_props);
     const auto &newViewProps = *std::static_pointer_cast<InstantpayCameraViewProps const>(props);
-    
 
     if (oldViewProps.color != newViewProps.color) {
         [_view setBackgroundColor: RCTUIColorFromSharedColor(newViewProps.color)];
@@ -92,6 +91,124 @@ using namespace facebook::react;
         }
         [_view setValue:facing forKey:@"cameraFacing"];
     }
+    
+    ///Torch Mode
+    if (oldViewProps.torchMode != newViewProps.torchMode){
+        NSString *torchMode;
+        switch (newViewProps.torchMode) {
+            case InstantpayCameraViewTorchMode::ON :
+                torchMode = @"ON";
+                break;
+            case InstantpayCameraViewTorchMode::OFF :
+                torchMode = @"OFF";
+                break;
+            default:
+                torchMode = @"NOT_SET";
+                break;
+        }
+        [_view setValue:torchMode forKey:@"torchMode"];
+    }
+    
+    ///Photo Capture Config
+    
+    if(newViewProps.photoCaptureConfig.enableConfig){
+        NSMutableDictionary *options = [NSMutableDictionary dictionary];
+        
+        if (oldViewProps.photoCaptureConfig.quality != newViewProps.photoCaptureConfig.quality){
+            switch (newViewProps.photoCaptureConfig.quality) {
+                case InstantpayCameraViewQuality::HIGH :
+                    options[@"quality"] = @"HIGH";
+                    break;
+                case InstantpayCameraViewQuality::MEDIUM :
+                    options[@"quality"] = @"MEDIUM";
+                    break;
+                case InstantpayCameraViewQuality::LOW :
+                    options[@"quality"] = @"LOW";
+                    break;
+                    
+                default:
+                    options[@"quality"] = @"MEDIUM";
+                    break;
+            }
+        }
+        
+        if (oldViewProps.photoCaptureConfig.flash != newViewProps.photoCaptureConfig.flash){
+            switch (newViewProps.photoCaptureConfig.flash) {
+                case InstantpayCameraViewFlash::ON :
+                    options[@"flash"] = @"ON";
+                    break;
+                case InstantpayCameraViewFlash::OFF :
+                    options[@"flash"] = @"OFF";
+                    break;
+                default:
+                    options[@"flash"] = @"AUTO";
+                    break;
+            }
+        }
+        
+        if (oldViewProps.photoCaptureConfig.saveToGallery != newViewProps.photoCaptureConfig.saveToGallery){
+            options[@"saveToGallery"] = newViewProps.photoCaptureConfig.saveToGallery ? @YES : @NO;
+        }
+        
+        if (oldViewProps.photoCaptureConfig.maxWidth != newViewProps.photoCaptureConfig.maxWidth){
+            options[@"maxWidth"] = @(newViewProps.photoCaptureConfig.maxWidth);
+        }
+        
+        if (oldViewProps.photoCaptureConfig.maxHeight != newViewProps.photoCaptureConfig.maxHeight){
+            options[@"maxHeight"] = @(newViewProps.photoCaptureConfig.maxHeight);
+        }
+        
+        if (oldViewProps.photoCaptureConfig.base64ImageOutput != newViewProps.photoCaptureConfig.base64ImageOutput){
+            options[@"base64ImageOutput"] = newViewProps.photoCaptureConfig.base64ImageOutput ? @YES : @NO;
+        }
+        
+        if (oldViewProps.photoCaptureConfig.compressBase64ImageOutput != newViewProps.photoCaptureConfig.compressBase64ImageOutput){
+            options[@"compressBase64ImageOutput"] = newViewProps.photoCaptureConfig.compressBase64ImageOutput ? @YES : @NO;
+        }
+        
+        if (oldViewProps.photoCaptureConfig.captureSound != newViewProps.photoCaptureConfig.captureSound){
+            options[@"captureSound"] = newViewProps.photoCaptureConfig.captureSound ? @YES : @NO;
+        }
+        
+        if (oldViewProps.photoCaptureConfig.enableConfig != newViewProps.photoCaptureConfig.enableConfig){
+            options[@"enableConfig"] = newViewProps.photoCaptureConfig.enableConfig ? @YES : @NO;
+        }
+        
+        if (options.count > 0) {
+            [_view updatePhotoCaptureOptions:options];
+        }
+    }
+    
+    ///OCR Config : Detect Text
+    NSMutableDictionary *ocrOptions = [NSMutableDictionary dictionary];
+    
+    if(oldViewProps.ocrConfig.language != newViewProps.ocrConfig.language){
+        switch (newViewProps.ocrConfig.language) {
+            case InstantpayCameraViewLanguage::EN :
+                ocrOptions[@"language"] = @"EN";
+                break;
+            case InstantpayCameraViewLanguage::HI :
+                ocrOptions[@"language"] = @"HI";
+                break;
+                
+            default:
+                ocrOptions[@"language"] = @"EN";
+                break;
+        }
+    }
+    
+    if(oldViewProps.ocrConfig.detectAadhaar != newViewProps.ocrConfig.detectAadhaar){
+        ocrOptions[@"detectAadhaar"] = newViewProps.ocrConfig.detectAadhaar ? @YES : @NO;
+    }
+    
+    if(oldViewProps.ocrConfig.detectPan != newViewProps.ocrConfig.detectPan){
+        ocrOptions[@"detectPan"] = newViewProps.ocrConfig.detectPan ? @YES : @NO;
+    }
+    
+    if(ocrOptions.count > 0){
+        [_view updateOcrConfiguration:ocrOptions];
+    }
+    
 
     [super updateProps:props oldProps:oldProps];
 }
@@ -188,6 +305,9 @@ using namespace facebook::react;
 }
 
 @end
+
+
+
 
 
 
